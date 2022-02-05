@@ -11,15 +11,12 @@ strong_components <- components(blogs_graph, mode = "strong")
 
 # Finding the nodes in largest cluster of connected components
 scc <- which(strong_components$membership == which.max(strong_components$csize))
-
+scc_nodes <- V(blogs_graph)[V(blogs_graph)$id %in% scc]$name
+cat("\nSCC Size:", length(scc_nodes))
 
 # Finding the nodes not in scc
 not_in_scc <- which(strong_components$membership != which.max(strong_components$csize))
-
-non_scc_nodes <- which(V(blogs_graph)$id %in% not_in_scc)
-
-scc_nodes<- which(V(blogs_graph)$id %in% scc)
-cat("\nSCC Size:", length(scc_nodes))
+non_scc_nodes <- V(blogs_graph)[V(blogs_graph)$id %in% not_in_scc]$name
 
 # Function to detect paths between nodes
 path_exists <- function(g, start_node, finish_nodes, mode){
@@ -60,12 +57,18 @@ for (node in out_scc) {
 cat("\nOut Component Size:", length(out_component))
 
 # Finding tube component size
+rem_nodes <- non_scc_nodes[!non_scc_nodes %in% c(in_component, out_component)]
 
-other_nodes <- non_scc_nodes[! non_scc_nodes %in% in_component]
-other_nodes <- other_nodes[!other_nodes %in% out_component]
+possible_tube <- c()
+for (node in non_scc_nodes) {
+  if(!path_exists(blogs_graph, node, scc_nodes, mode = 'out') 
+     && !path_exists(blogs_graph, node, scc_nodes, mode = 'in')) {
+    possible_tube <- c(possible_tube, node)
+  }
+}
 
 in_tube <- c()
-for (node in other_nodes) {
+for (node in possible_tube) {
   if(path_exists(blogs_graph, node, in_component, mode = 'in')) {
     in_tube <- c(in_tube, node)
   }
@@ -93,15 +96,15 @@ for (node in tube_out) {
 
 cat("\nTube Component Size:", length(tube_component))
 
-
 # Finding liberal and conservative percentage
-liberals <- V(blogs_graph)[V(blogs_graph)$value == 0]
-conservatives <- V(blogs_graph)[V(blogs_graph)$value == 1]
+liberals <- V(blogs_graph)[V(blogs_graph)$value == 0]$name
 
-l_in_scc <- round((length(intersect(liberals, scc)) / length(scc)) * 100, digits = 2)
+conservatives <- V(blogs_graph)[V(blogs_graph)$value == 1]$name
+
+l_in_scc <- round((length(intersect(liberals, scc_nodes)) / length(scc)) * 100, digits = 2)
 cat("\nProportion of liberal blogs in SCC:",l_in_scc,"%")
 
-c_in_scc <- round((length(intersect(conservatives, scc)) / length(scc)) * 100, digits = 2)
+c_in_scc <- round((length(intersect(conservatives, scc_nodes)) / length(scc)) * 100, digits = 2)
 cat("\nProportion of conservatives blogs in SCC:",c_in_scc,"%")
 
 l_in_component <- round((length(intersect(liberals, in_component)) / length(in_component)) * 100, digits = 2)
@@ -115,3 +118,5 @@ cat("\nProportion of liberal blogs in OUT component:",l_out_component,"%")
 
 c_out_component <- round((length(intersect(conservatives, out_component)) / length(out_component)) * 100, digits = 2)
 cat("\nProportion of conservatives blogs in OUT component:",c_out_component,"%")
+
+

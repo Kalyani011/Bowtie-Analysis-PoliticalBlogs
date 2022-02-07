@@ -97,122 +97,115 @@ for (node in tube_out) {
 cat("\nTube Component Size:", length(tube_component))
 
 # Finding liberal and conservative percentage
-liberals <- V(blogs_graph)[V(blogs_graph)$value == 0]$name
+liberals <- V(blogs_graph)[V(blogs_graph)$value == 0]
 
-conservatives <- V(blogs_graph)[V(blogs_graph)$value == 1]$name
+conservatives <- V(blogs_graph)[V(blogs_graph)$value == 1]
 
-l_in_scc <- round((length(intersect(liberals, scc_nodes)) / length(scc)) * 100, digits = 2)
+l_in_scc <- round((length(intersect(liberals$name, scc_nodes)) / length(scc)) * 100, digits = 2)
 cat("\nProportion of liberal blogs in SCC:",l_in_scc,"%")
 
-c_in_scc <- round((length(intersect(conservatives, scc_nodes)) / length(scc)) * 100, digits = 2)
+c_in_scc <- round((length(intersect(conservatives$name, scc_nodes)) / length(scc)) * 100, digits = 2)
 cat("\nProportion of conservatives blogs in SCC:",c_in_scc,"%")
 
-l_in_component <- round((length(intersect(liberals, in_component)) / length(in_component)) * 100, digits = 2)
+l_in_component <- round((length(intersect(liberals$name, in_component)) / length(in_component)) * 100, digits = 2)
 cat("\nProportion of liberal blogs in IN component:",l_in_component,"%")
 
-c_in_component <- round((length(intersect(conservatives, in_component)) / length(in_component)) * 100, digits = 2)
+c_in_component <- round((length(intersect(conservatives$name, in_component)) / length(in_component)) * 100, digits = 2)
 cat("\nProportion of conservatives blogs in IN component:",c_in_component,"%")
 
-l_out_component <- round((length(intersect(liberals, out_component)) / length(out_component)) * 100, digits = 2)
+l_out_component <- round((length(intersect(liberals$name, out_component)) / length(out_component)) * 100, digits = 2)
 cat("\nProportion of liberal blogs in OUT component:",l_out_component,"%")
 
-c_out_component <- round((length(intersect(conservatives, out_component)) / length(out_component)) * 100, digits = 2)
+c_out_component <- round((length(intersect(conservatives$name, out_component)) / length(out_component)) * 100, digits = 2)
 cat("\nProportion of conservatives blogs in OUT component:",c_out_component,"%")
 
 ### 3 most conservative influential sites from liberals perspective
-conservative_neighbours <- list()
-for (node in conservatives) {
-  alters <- neighbors(blogs_graph, node, mode = c("in"))
-  l_alters <- intersect(V(blogs_graph)[V(blogs_graph) %in% alters]$name, liberals)
-  count = 0
-  for(alter in l_alters) {
-    temp <- neighbors(blogs_graph, alter, mode = 'all')
-    temp_c <- intersect(V(blogs_graph)[V(blogs_graph) %in% temp]$name, conservatives)
-    temp_l <- intersect(V(blogs_graph)[V(blogs_graph) %in% temp]$name, liberals)
-    if(length(temp_c) < length(temp_l)){
-      count = count + 1
-    }
-  }
-  conservative_neighbours[[node]] <- count
-}
-conservative_neighbours <- conservative_neighbours[conservative_neighbours != 0]
-influential_c <- conservative_neighbours[order(unlist(conservative_neighbours), decreasing=TRUE)][1:3]
-cat("\nFrom the perspective of liberal bloggers, 3 most influential conservative bloggers are:", toString(names(influential_c)))
+# conservative_neighbours <- list()
+# for (node in conservatives$name) {
+#   alters <- neighbors(blogs_graph, node, mode = c("in"))
+#   l_alters <- intersect(V(blogs_graph)[V(blogs_graph) %in% alters]$name, liberals$name)
+#   count = 0
+#   for(alter in l_alters) {
+#     temp <- neighbors(blogs_graph, alter, mode = 'all')
+#     temp_c <- intersect(V(blogs_graph)[V(blogs_graph) %in% temp]$name, conservatives$name)
+#     temp_l <- intersect(V(blogs_graph)[V(blogs_graph) %in% temp]$name, liberals$name)
+#     if(length(temp_c) < length(temp_l)){
+#       count = count + 1
+#     }
+#   }
+#   conservative_neighbours[[node]] <- count
+# }
+# conservative_neighbours <- conservative_neighbours[conservative_neighbours != 0]
+# influential_c <- conservative_neighbours[order(unlist(conservative_neighbours), decreasing=TRUE)][1:3]
+# cat("\nFrom the perspective of liberal bloggers, 3 most influential conservative bloggers are:", toString(names(influential_c)))
 
 ### 3 most liberal influential sites from conservative's perspective
-liberals_neighbours <- list()
-for (node in liberals) {
-  alters <- neighbors(blogs_graph, node, mode = 'in')
-  c_alters <- intersect(V(blogs_graph)[V(blogs_graph) %in% alters]$name, conservatives)
-  count = 0
-  for(alter in c_alters) {
-    temp <- neighbors(blogs_graph, alter, mode = 'all')
-    temp_c <- intersect(V(blogs_graph)[V(blogs_graph) %in% temp]$name, conservatives)
-    temp_l <- intersect(V(blogs_graph)[V(blogs_graph) %in% temp]$name, liberals)
-    if(length(temp_c) > length(temp_l)){
-      count = count + 1
-    }
-  }
-  liberals_neighbours[[node]] <- count
-}
-liberals_neighbours <- liberals_neighbours[liberals_neighbours != 0]
-influential_l <- liberals_neighbours[order(unlist(liberals_neighbours), decreasing=TRUE)][1:3]
-cat("\nFrom the perspective of conservative bloggers, 3 most influential liberal bloggers are:",
-    toString(names(influential_l)))
+# liberal_neighbours <- list()
+# for (node in liberals$name) {
+#   alters <- neighbors(blogs_graph, node, mode = 'in')
+#   c_alters <- intersect(V(blogs_graph)[V(blogs_graph) %in% alters]$name, conservatives$name)
+#   count = 0
+#   for(alter in c_alters) {
+#     temp <- neighbors(blogs_graph, alter, mode = 'all')
+#     temp_c <- intersect(V(blogs_graph)[V(blogs_graph) %in% temp]$name, conservatives$name)
+#     temp_l <- intersect(V(blogs_graph)[V(blogs_graph) %in% temp]$name, liberals$name)
+#     if(length(temp_c) > length(temp_l)){
+#       count = count + 1
+#     }
+#   }
+#   liberals_neighbours[[node]] <- count
+# }
+# liberals_neighbours <- liberals_neighbours[liberals_neighbours != 0]
+# influential_l <- liberals_neighbours[order(unlist(liberals_neighbours), decreasing=TRUE)][1:3]
+# cat("\nFrom the perspective of conservative bloggers, 3 most influential liberal bloggers are:",
+#     toString(names(influential_l)))
 
 ## could show page rank, that they all have page rank greater than the average page rank of the entire graph
 
 neutrals <- list()
-for (node in conservatives) {
+for (node in conservatives$name) {
   alters <- neighbors(blogs_graph, node, mode = 'all')
   temp <- V(blogs_graph)[V(blogs_graph) %in% alters]$name
-  c_alters <- intersect(temp, conservatives)
-  l_alters <- intersect(temp, liberals)
+  c_alters <- intersect(temp, conservatives$name)
+  l_alters <- intersect(temp, liberals$name)
   if(length(l_alters) > length(c_alters)) {
     neutrals[[node]] <- length(l_alters) - length(c_alters)
   }
 }
-for (node in liberals) {
+for (node in liberals$name) {
   alters <- neighbors(blogs_graph, node, mode = 'all')
   temp <- V(blogs_graph)[V(blogs_graph) %in% alters]$name
-  c_alters <- intersect(temp, conservatives)
-  l_alters <- intersect(temp, liberals)
+  c_alters <- intersect(temp, conservatives$name)
+  l_alters <- intersect(temp, liberals$name)
   if(length(l_alters) < length(c_alters)) {
     neutrals[[node]] <- length(c_alters) - length(l_alters)
   }
 }
 
+conservative_authorities <- list()
+for (node in conservatives$name) {
+  neighbors <- neighbors(blogs_graph, node, mode="in")
+  neighbors <- V(blogs_graph)[intersect(neighbors, conservatives)]
+  ego_nodes1.5 <- c(node, neighbors$name)
+  sub_net <- induced_subgraph(blogs_graph, c(liberals$name, ego_nodes1.5))
+  V(sub_net)$authority <- authority_score(sub_net, scale = TRUE)$vector
+  conservative_authorities[[node]] <- V(sub_net)[V(sub_net)$name == node]$authority
+}
+conservative_authorities <- conservative_authorities[conservative_authorities != 0]
+influential_c <- conservative_authorities[order(unlist(conservative_authorities), decreasing=TRUE)][1:3]
+cat("\nFrom the perspective of liberal bloggers, 3 most influential conservative bloggers are:"
+    , toString(names(influential_c)))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# V(blogs_graph)$authority <- authority_score(blogs_graph, scale = TRUE)$vector
-# V(blogs_graph)$hub <- hub_score(blogs_graph, scale = TRUE)$vector
-# 
-ecc <- eccentricity(blogs_graph)
-
-V(blogs_graph)$eccentricity <- ecc
-# 
-pageRanks <- page_rank(blogs_graph,  directed = TRUE, damping = 0.85)$vector
-V(blogs_graph)$pageR <- pageRanks
-# # 
-# # V(blogs_graph)[V(blogs_graph)$name %in% names(influential_c)]$eccentricity
-# # V(blogs_graph)[V(blogs_graph)$name %in% names(influential_l)]$eccentricity
-# # 
-# # V(blogs_graph)$deg <- degree(blogs_graph)
-# # V(blogs_graph)$in_deg <- degree(blogs_graph, mode = 'in')
-# # V(blogs_graph)$out_deg <- degree(blogs_graph, mode = 'out')
-# # 
-# # V(blogs_graph)[c(V(blogs_graph)$eccentricity == 8)]$in_deg
-# # V(blogs_graph)[c(V(blogs_graph)$eccentricity == 8)]$out_deg
+liberal_authorities <- list()
+for (node in liberals$name) {
+  neighbors <- neighbors(blogs_graph, node, mode="in")
+  neighbors <- V(blogs_graph)[intersect(neighbors, liberals)]
+  ego_nodes1.5 <- c(node, neighbors$name)
+  sub_net <- induced_subgraph(blogs_graph, c(conservatives$name, ego_nodes1.5))
+  V(sub_net)$authority <- authority_score(sub_net, scale = TRUE)$vector
+  liberal_authorities[[node]] <- V(sub_net)[V(sub_net)$name == node]$authority
+}
+liberal_authorities <- liberal_authorities[liberal_authorities != 0]
+influential_l <- liberal_authorities[order(unlist(liberal_authorities), decreasing=TRUE)][1:3]
+cat("\nFrom the perspective of conservative bloggers, 3 most influential liberal bloggers are:",
+    toString(names(influential_l)))

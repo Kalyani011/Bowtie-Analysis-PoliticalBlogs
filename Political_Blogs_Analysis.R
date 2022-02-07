@@ -119,67 +119,68 @@ cat("\nProportion of liberal blogs in OUT component:",l_out_component,"%")
 c_out_component <- round((length(intersect(conservatives, out_component)) / length(out_component)) * 100, digits = 2)
 cat("\nProportion of conservatives blogs in OUT component:",c_out_component,"%")
 
-# in_degrees <- degree(blogs_graph, mode = 'in')
-# V(blogs_graph)[which(in_degrees==max(in_degrees))]$name
-# table(in_degrees)
-# pr<- page_rank(blogs_graph,  directed = TRUE, damping = 0.85)$vector
-
-# all conservative vertices having in links from liberals and vice-versa
-# all_nodes <- V(blogs_graph)$name
-# 
-# liberals_to_conservatives <- c()
-# for (node in conservatives) {
-#   dist <- bfs(blogs_graph, root=node, neimode='in', unreachable=F, dist=T)$dist
-#   dist[liberals]
-#   liberals_to_conservatives <- c(liberals_to_conservatives, c(node, dist[liberals]))
-#   # if(path_exists(blogs_graph, node, liberals, mode = 'in')) {
-#   #   liberals_to_conservatives <- c(liberals_to_conservatives, node)
-#   # }
-# }
-# 
-
-# V(blogs_graph)[V(blogs_graph) %in% incoming_for_155]
-# + 4/1490 vertices, named, from 39e9191:
-#   [1] 100monkeystyping.com       12thharmonic.com/wordpress 40ozblog.blogspot.com     
-# [4] 4lina.tblog.com           
-# > V(blogs_graph)[V(blogs_graph) %in% incoming_for_155]
-# + 4/1490 vertices, named, from 39e9191:
-#   [1] 100monkeystyping.com       12thharmonic.com/wordpress 40ozblog.blogspot.com     
-# [4] 4lina.tblog.com           
-# > temp<-V(blogs_graph)[V(blogs_graph) %in% incoming_for_155]
-# > temp
-# + 4/1490 vertices, named, from 39e9191:
-#   [1] 100monkeystyping.com       12thharmonic.com/wordpress 40ozblog.blogspot.com     
-# [4] 4lina.tblog.com           
-# > temp$value
-# [1] 0 0 0 0
-
-# conservatives_to_liberals <- c()
-# for (node in liberals) {
-#   if(path_exists(blogs_graph, node, conservatives, mode = 'in')) {
-#     conservatives_to_liberals <- c(conservatives_to_liberals, node)
-#   }
-# }
-# use ego
 ### 3 most conservative influential sites from liberals perspective
 conservative_neighbours <- list()
 for (node in conservatives) {
   alters <- neighbors(blogs_graph, node, mode = c("in"))
   l_alters <- intersect(V(blogs_graph)[V(blogs_graph) %in% alters]$name, liberals)
-  conservative_neighbours[[node]] <- length(l_alters)
+  count = 0
+  for(alter in l_alters) {
+    temp <- neighbors(blogs_graph, alter, mode = 'all')
+    temp_c <- intersect(V(blogs_graph)[V(blogs_graph) %in% temp]$name, conservatives)
+    temp_l <- intersect(V(blogs_graph)[V(blogs_graph) %in% temp]$name, liberals)
+    if(length(temp_c) < length(temp_l)){
+      count = count + 1
+    }
+  }
+  conservative_neighbours[[node]] <- count
 }
 conservative_neighbours <- conservative_neighbours[conservative_neighbours != 0]
-conservative_neighbours[order(unlist(conservative_neighbours), decreasing=TRUE)][1:3]
+influential_c <- conservative_neighbours[order(unlist(conservative_neighbours), decreasing=TRUE)][1:3]
+cat("\nFrom the perspective of liberal bloggers, 3 most influential conservative bloggers are:", toString(names(influential_c)))
 
-### 3 most conservative influential sites from liberals perspective
+### 3 most liberal influential sites from conservative's perspective
 liberals_neighbours <- list()
 for (node in liberals) {
-  alters <- neighbors(blogs_graph, node, mode = c("in"))
-  c_alters <- intersect(V(blogs_graph)[V(blogs_graph) %in% alters]$name, liberals)
-  liberals_neighbours[[node]] <- length(c_alters)
+  alters <- neighbors(blogs_graph, node, mode = 'in')
+  c_alters <- intersect(V(blogs_graph)[V(blogs_graph) %in% alters]$name, conservatives)
+  count = 0
+  for(alter in c_alters) {
+    temp <- neighbors(blogs_graph, alter, mode = 'all')
+    temp_c <- intersect(V(blogs_graph)[V(blogs_graph) %in% temp]$name, conservatives)
+    temp_l <- intersect(V(blogs_graph)[V(blogs_graph) %in% temp]$name, liberals)
+    if(length(temp_c) > length(temp_l)){
+      count = count + 1
+    }
+  }
+  liberals_neighbours[[node]] <- count
 }
 liberals_neighbours <- liberals_neighbours[liberals_neighbours != 0]
-liberals_neighbours[order(unlist(liberals_neighbours), decreasing=TRUE)][1:3]
+influential_l <- liberals_neighbours[order(unlist(liberals_neighbours), decreasing=TRUE)][1:3]
+cat("\nFrom the perspective of conservative bloggers, 3 most influential liberal bloggers are:",
+    toString(names(influential_l)))
+
+## could show page rank, that they all have page rank greater than the average page rank of the entire graph
+
+neutrals <- list()
+for (node in conservatives) {
+  alters <- neighbors(blogs_graph, node, mode = 'all')
+  temp <- V(blogs_graph)[V(blogs_graph) %in% alters]$name
+  c_alters <- intersect(temp, conservatives)
+  l_alters <- intersect(temp, liberals)
+  if(length(l_alters) > length(c_alters)) {
+    neutrals[[node]] <- length(l_alters) - length(c_alters)
+  }
+}
+for (node in liberals) {
+  alters <- neighbors(blogs_graph, node, mode = 'all')
+  temp <- V(blogs_graph)[V(blogs_graph) %in% alters]$name
+  c_alters <- intersect(temp, conservatives)
+  l_alters <- intersect(temp, liberals)
+  if(length(l_alters) < length(c_alters)) {
+    neutrals[[node]] <- length(c_alters) - length(l_alters)
+  }
+}
 
 
 
@@ -190,3 +191,28 @@ liberals_neighbours[order(unlist(liberals_neighbours), decreasing=TRUE)][1:3]
 
 
 
+
+
+
+
+
+
+# V(blogs_graph)$authority <- authority_score(blogs_graph, scale = TRUE)$vector
+# V(blogs_graph)$hub <- hub_score(blogs_graph, scale = TRUE)$vector
+# 
+ecc <- eccentricity(blogs_graph)
+
+V(blogs_graph)$eccentricity <- ecc
+# 
+pageRanks <- page_rank(blogs_graph,  directed = TRUE, damping = 0.85)$vector
+V(blogs_graph)$pageR <- pageRanks
+# # 
+# # V(blogs_graph)[V(blogs_graph)$name %in% names(influential_c)]$eccentricity
+# # V(blogs_graph)[V(blogs_graph)$name %in% names(influential_l)]$eccentricity
+# # 
+# # V(blogs_graph)$deg <- degree(blogs_graph)
+# # V(blogs_graph)$in_deg <- degree(blogs_graph, mode = 'in')
+# # V(blogs_graph)$out_deg <- degree(blogs_graph, mode = 'out')
+# # 
+# # V(blogs_graph)[c(V(blogs_graph)$eccentricity == 8)]$in_deg
+# # V(blogs_graph)[c(V(blogs_graph)$eccentricity == 8)]$out_deg

@@ -1,5 +1,19 @@
+---
+title: "Assignment 2 - Analysis of US Political Blogs"
+author: "Kalyani Prashant Kawale"
+output: pdf_document
+---
+
+\begin{center}
+Student ID: 21237189
+\end{center}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 # Reading the Given Graph
 
+```{r Reading Graph, echo=TRUE, message=FALSE, warning=FALSE}
 # Importing packages
 library(igraph)
 library(knitr)
@@ -18,14 +32,17 @@ V(blogs_graph)$authority <- authority_score(blogs_graph)$vector
 # Initializing results table
 results <- c()
 
+```
+
+
 # Question 1: What are the sizes of the strongly connected component (scc), in-component, out-component and tube component?
 
 ## Solution 1
 
-# **Finding SCC components:**
-  # The strongly connected component is computed using the **component()** method of igraph using *mode=strong*. Following code is used to extract the component with maximum number of nodes with the help of *csize* vector returned by component() method.
+**Finding SCC components:**
+The strongly connected component is computed using the **component()** method of igraph using *mode=strong*. Following code is used to extract the component with maximum number of nodes with the help of *csize* vector returned by component() method.
 
-
+```{r SCC Size, echo=TRUE, message=FALSE, warning=FALSE}
 # Getting components from graph
 strong_components <- components(blogs_graph, mode = "strong")
 # Finding the nodes in largest cluster of connected components
@@ -37,10 +54,13 @@ results <- rbind(results, c("SCC", length(scc_nodes)))
 cat("SCC Size:", length(scc_nodes))
 # Finding the nodes not in scc
 non_scc_nodes <- V(blogs_graph)[!V(blogs_graph) %in% scc_nodes]
-# 
-# **Finding IN, OUT and TUBE Components:**
-#   The IN and OUT component sizes are computed by checking if path exists between the nodes and scc component, while for the TUBE component, paths are checked between nodes not connected to scc and the IN/OUT components, using the **bfs()** method of igraph.
 
+```
+
+**Finding IN, OUT and TUBE Components:**
+The IN and OUT component sizes are computed by checking if path exists between the nodes and scc component, while for the TUBE component, paths are checked between nodes not connected to scc and the IN/OUT components, using the **bfs()** method of igraph.
+
+```{r path_exists function, echo=TRUE, message=FALSE, warning=FALSE}
 # Note: Following code is taken from "Exploratory Analysis of Game of Thrones Network" 
 # worksheet
 # Function to detect paths between nodes
@@ -48,9 +68,10 @@ path_exists <- function(g, start_node, finish_nodes, mode){
   dist <- bfs(g, root=start_node, neimode=mode, unreachable=F, dist=T)$dist
   return (any(!is.nan(dist[finish_nodes])))
 }
+```
 
-# The following code defines a function to get components based on existence of paths between different components:
-  
+The following code defines a function to get components based on existence of paths between different components:
+```{r}
 # Function to get components based on the links that exist or do not exist between
 # two set of nodes
 get_components <- function(start_nodes, end_nodes, mode1, mode2) {
@@ -72,32 +93,45 @@ get_components <- function(start_nodes, end_nodes, mode1, mode2) {
   }
   return (result_components)
 }
+```
 
-# To extract the **IN component**, for each node in *non_scc_nodes*, checking if **path exists from node to scc component**, and **no path exists from scc component to the node**.
 
+To extract the **IN component**, for each node in *non_scc_nodes*, checking if **path exists from node to scc component**, and **no path exists from scc component to the node**.
+
+```{r IN Component, echo=TRUE, message=FALSE, warning=FALSE}
 # Finding IN component
 in_component <- get_components(non_scc_nodes, scc_nodes, 'out', 'in')
 # Adding IN component size to table
 results <- rbind(results, c("IN", length(in_component)))
 cat("IN Component Size:", length(in_component))
 
+```
+
+```{r Nodes not in SCC and IN component, echo=TRUE, message=FALSE, warning=FALSE}
 # Getting nodes not in SCC and IN component
 rem_nodes <- non_scc_nodes[!non_scc_nodes %in% c(in_component)]
+```
 
-# To extract the **OUT component**, for each node in *non_scc_nodes*, checking if **path exists to node from scc component**, and **no path exists from node to scc component**.
+To extract the **OUT component**, for each node in *non_scc_nodes*, checking if **path exists to node from scc component**, and **no path exists from node to scc component**.
+
+```{r OUT Component, echo=TRUE, message=TRUE, warning=FALSE}
 # Finding OUT component
 out_component <- get_components(rem_nodes, scc_nodes, 'in', 'out')
 # Adding OUT component size to table
 results <- rbind(results, c("OUT", length(out_component)))
 cat("OUT Component Size:", length(out_component))
 
+```
+
+```{r Nodes not in SCC, echo=TRUE, message=FALSE, warning=FALSE}
 # Getting nodes not in SCC, IN component, and OUT component
 rem_nodes <- non_scc_nodes[!non_scc_nodes %in% c(in_component, out_component)]
 
+```
 
-# To extract **TUBE component**, for each node in *rem_nodes* finding all nodes not connected to scc component with in-coming paths from IN component and out-going paths to OUT components using **path_exists()** method.
+To extract **TUBE component**, for each node in *rem_nodes* finding all nodes not connected to scc component with in-coming paths from IN component and out-going paths to OUT components using **path_exists()** method.
 
-
+```{r TUBE component, echo=TRUE, message=FALSE, warning=FALSE}
 # Finding TUBE component size
 # Getting nodes that are not connected to any nodes in SCC component
 possible_tube <- c()
@@ -120,27 +154,34 @@ tube_component <- get_components(partial_tube, out_component, 'out', 'in')
 results <- rbind(results, c("TUBE", length(tube_component)))
 cat("TUBE Component Size:", length(tube_component))
 
+```
+
 ### Question 1 Results
 
+```{r Question 1 Solution, echo=TRUE, message=FALSE, warning=FALSE}
 # Printing SCC, IN, OUT, TUBE component sizes as a table
 kable(results, col.names=c("Component", "Size"), caption = "Solution 1:", 
       align = "c", booktabs=T) %>%
   kable_styling(latex_options = "HOLD_position")
+```
 
 
 # Question 2: What are the proportions of liberal/conservative blogs in the scc, in-component, out-component?
 
 ## Solution 2
-# Following code is used to find the liberal and conservative nodes, which are then used to get their proportions in the SCC, IN component and OUT component.
+Following code is used to find the liberal and conservative nodes, which are then used to get their proportions in the SCC, IN component and OUT component.
 
+```{r Node types, echo=TRUE, message=FALSE, warning=FALSE}
 # Getting nodes with value 0 i.e. liberal blogs
 liberals <- V(blogs_graph)[V(blogs_graph)$value == 0]
 
 # Getting nodes with value 1 i.e. conservative blogs
 conservatives <- V(blogs_graph)[V(blogs_graph)$value == 1]
+```
 
-# Extracting the amount of liberal/conservative nodes in each component using **intersect()** method.
+Extracting the amount of liberal/conservative nodes in each component using **intersect()** method.
 
+```{r Proportions, echo=TRUE, message=FALSE, warning=FALSE}
 # Initializing results for saving proportions
 results <- c()
 # Calculating the proportions and saving in results
@@ -174,20 +215,24 @@ c_out_component <- round((length(intersect(conservatives, out_component))
 results <- rbind(results, c("Proportion of conservative blogs in OUT component", 
                             paste(c_out_component, "%")))
 
+```
+
 ### Question 2 Results
 
+```{r Question 2 Solution, echo=TRUE, message=FALSE, warning=FALSE}
 # Printing proportions of liberals/conservatives in SCC, IN, and OUT component
 kable(results, caption = "Solution 2:", booktabs=T) %>%
   kable_styling(latex_options = "HOLD_position")
-
+```
 
 # Question 3: From the perspective of liberal bloggers, what are the 3 most influential conservative bloggers?
 
 ## Solution 3
-# 1. To find the influential conservative bloggers, from liberal perspective, the authority of each conservative blog (ego) is computed in a sub-graph, created using all the liberal nodes and conservative neighbors of the ego node, along with the ego node.  
-# 2. These authorities are compared and the 3 blogs with highest authority are extracted.  
-# 3. The sub-graph is created to get the influence of any conservative node only from the perspective of liberal nodes, however, the use of the 1.5 network is based on the assumption that many liberal blogs may be linking to a conservative blog, which highly references or is based on another conservative blog (immediate neighbor), which may be of higher importance and vice-versa.
+1. To find the influential conservative bloggers, from liberal perspective, the authority of each conservative blog (ego) is computed in a sub-graph, created using all the liberal nodes and conservative neighbors of the ego node, along with the ego node.  
+2. These authorities are compared and the 3 blogs with highest authority are extracted.  
+3. The sub-graph is created to get the influence of any conservative node only from the perspective of liberal nodes, however, the use of the 1.5 network is based on the assumption that many liberal blogs may be linking to a conservative blog, which highly references or is based on another conservative blog (immediate neighbor), which may be of higher importance and vice-versa.
 
+```{r Influential Conservative Bloggers, echo=TRUE, message=FALSE, warning=FALSE}
 
 # Defining function influential_blogs to calculate influential blogs 
 # from a community's perspective
@@ -218,8 +263,11 @@ influential_blogs <- function(src_community, target_community) {
 # Saving 3 most influential conservative nodes from perspective of liberals
 influential_c <- influential_blogs(liberals, conservatives)
 
+```
 
 ### Question 3 Results
+
+```{r Question 3 Solution, echo=TRUE, message=FALSE, warning=FALSE}
 
 # Initializing results to save influential conservative blogs
 results <- c()
@@ -227,7 +275,7 @@ results <- c()
 for(i in 1:length(influential_c)) {
   sub_auth <- round(as.double(influential_c[i]), digits = 4)
   overall_auth <- round(as.double(V(blogs_graph)[V(blogs_graph)$name ==
-                                                   names(influential_c[i])]$authority), digits = 4)
+                         names(influential_c[i])]$authority), digits = 4)
   results <- rbind(results, c(names(influential_c[i]), sub_auth, overall_auth))
   
 }
@@ -236,29 +284,29 @@ kable(results, col.names = c("Blog", "Sub-Graph Authority", "Overall Authority")
       caption = "Solution 3: Three most influential conservative bloggers, 
       from the perspective of liberal bloggers, ", booktabs=T, align="c") %>% 
   kable_styling(latex_options = "HOLD_position")
-
+```
 
 # Question 4: From the perspective of conservative bloggers, what are the 3 most influential liberal bloggers?
 
 ## Solution 4
 
-# Following the same approach as solution 3, the 3 most influential liberal bloggers were calculated as follows:
-  
+Following the same approach as solution 3, the 3 most influential liberal bloggers were calculated as follows:
 
+```{r Influential Liberal Bloggers, echo=TRUE, message=FALSE, warning=FALSE}
 # Saving 3 most influential liberal nodes from perspective of conservatives
 influential_l <- influential_blogs(conservatives, liberals)
-
+```
 
 ### Question 4 Results:
 
-
+```{r Question 4 Solution, echo=TRUE, message=FALSE, warning=FALSE}
 # Initializing results to save influential liberal blogs
 results <- c()
 # Saving blog names, authority in sub-graph and overall authority in full graph 
 for(i in 1:length(influential_l)) {
   sub_auth <- round(as.double(influential_l[i]), digits = 4)
   overall_auth <- round(as.double(V(blogs_graph)[V(blogs_graph)$name ==
-                                                   names(influential_l[i])]$authority), digits = 4)
+                         names(influential_l[i])]$authority), digits = 4)
   results <- rbind(results, c(names(influential_l[i]), sub_auth, overall_auth))
 }
 # Printing 3 most influential liberal nodes from perspective of conservatives
@@ -266,16 +314,16 @@ kable(results, col.names = c("Blog", "Sub-Graph Authority", "Overall Authority")
       caption = "Solution 3: Three most influential liberal bloggers, from the 
       perspective of conservative bloggers, ", booktabs=T, align="c") %>% 
   kable_styling(latex_options = "HOLD_position")
-
+```
 
 # Question 5: Identify the 3 most 'neutral' blogs in the dataset.
 
 ## Solution 5
-# 
-# + To identify 3 most neutral blogs, the nodes with equal number of liberal and conservative neighbors with same number of incoming and outgoing links are identified.  
-# + The nodes found using this process mostly have one or two neighbours, hence the nodes with highest degree are selected to be most neutral, because these link to more nodes in the graph and yet have equal number of links for both communities.
 
++ To identify 3 most neutral blogs, the nodes with equal number of liberal and conservative neighbors with same number of incoming and outgoing links are identified.  
++ The nodes found using this process mostly have one or two neighbours, hence the nodes with highest degree are selected to be most neutral, because these link to more nodes in the graph and yet have equal number of links for both communities.
 
+```{r Neutrals, echo=TRUE, message=FALSE, warning=FALSE}
 neutrals <- c()
 # For all nodes in the graph checking if they are neutral nodes
 for(node in V(blogs_graph)$name) {
@@ -315,10 +363,11 @@ for(node in V(blogs_graph)$name) {
 neutral_nodes <- neutrals[order(unlist(neutrals), decreasing=TRUE)][1:3]
 cat("3 most neutral nodes are:",
     toString(names(neutral_nodes)))
-
+```
 
 ### Question 5 Result: Neutral nodes and their Neigbhours
 
+```{r Question 5 Result 1, echo=TRUE, message=FALSE, warning=FALSE}
 # Finding neighbours of first neutral node and printing the result
 results <- c()
 alters <- neighbors(blogs_graph, names(neutral_nodes[1]))$name
@@ -331,8 +380,9 @@ kable(results, col.names = c("Sr. No.", "Blog", "Type"),
       caption = paste("Neighbour of neutral node ", 
                       names(neutral_nodes[1])), booktabs=T, align="c") %>% 
   kable_styling(latex_options = "HOLD_position")
+```
 
-
+```{r Question 5 Result 2, echo=TRUE, message=FALSE, warning=FALSE}
 # Finding neighbours of second neutral node and printing the result
 results <- c()
 alters <- neighbors(blogs_graph, names(neutral_nodes[2]))$name
@@ -345,8 +395,9 @@ kable(results, col.names = c("Sr. No.", "Blog", "Type"),
       caption = paste("Neighbour of neutral node ", 
                       names(neutral_nodes[2])), booktabs=T, align="c") %>% 
   kable_styling(latex_options = "HOLD_position")
+```
 
-
+```{r Question 5 Result 3, echo=TRUE, message=FALSE, warning=FALSE}
 # Finding neighbours of third neutral node and printing the result
 results <- c()
 alters <- neighbors(blogs_graph, names(neutral_nodes[3]))$name
@@ -359,3 +410,16 @@ kable(results, col.names = c("Sr. No.", "Blog", "Type"),
       caption = paste("Neighbour of neutral node ", 
                       names(neutral_nodes[3])), booktabs=T, align="c") %>% 
   kable_styling(latex_options = "HOLD_position")
+```
+
+# Acknowledgments:
+
+Following resources were referred to perform above tasks:
+
+1. Lada A. Adamic and Natalie Glance. 2005. The political blogosphere and the 2004 U.S. election: divided they blog. In Proceedings of the 3rd international workshop on Link discovery (LinkKDD '05). Association for Computing Machinery, New York, NY, USA, 36–43. DOI:https://doi.org/10.1145/1134271.1134277
+2. Dr. Conor Hayes. (2022). Centrality Week 3
+3. Dr. Conor Hayes. (2022). Connectivity
+4. Dr. Conor Hayes. 2022. Week 1 - Analysing the Adjacency Matrix of a Food Web
+5. Dr. Conor Hayes. 2022. Exploratory Analysis of Game of Thrones Network
+6. Dr. Conor Hayes. 2021. Centrality
+7. Dr. Conor Hayes. 2022. Analysing a Twitter Graph
